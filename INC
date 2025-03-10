@@ -1,0 +1,61 @@
+// Initialize the map
+var map = L.map('map').setView([40, -95], 4);
+
+// Add a basemap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+// Fetch GeoJSON data
+Promise.all([
+    fetch('megantew/Downloads/airportandcities/airports.geojson').then(res => res.json()),
+    fetch('megantew/usstatespolygons.geojson').then(res => res.json())
+]).then(([pointsData, polygonsData]) => {
+    
+    console.log('Airports Data:', pointsData);
+    console.log('States Data:', polygonsData);
+
+    // Count points within each polygon using Turf.js
+    polygonsData.features.forEach(polygon => {
+        let count = turf.pointsWithinPolygon(pointsData, polygon).features.length;
+        polygon.properties.count = count;
+        polygon.properties.density = count / turf.area(polygon); // Normalize by area
+    });
+
+    // Function to get color based on value
+    function getColor(d) {
+        return d > 50 ? '#800026' :
+               d > 20 ? '#BD0026' :
+               d > 10 ? '#E31A1C' :
+               d > 5  ? '#FC4E2A' :
+               d > 0  ? '#FEB24C' : '#FFEDA0';
+    }
+
+    // Define a choropleth style function
+    function styleCount(feature) {
+        return {
+            fillColor: getColor(feature.properties.count),
+            weight: 1,
+            opacity: 1,
+            color: 'black',
+            fillOpacity: 0.7
+        };
+    }
+    
+    function styleDensity(feature) {
+        return {
+            fillColor: getColor(feature.properties.density),
+            weight: 1,
+            opacity: 1,
+            color: 'black',
+            fillOpacity: 0.7
+        };
+    }
+
+    // Create layers
+    var countLayer = L.geoJson(polygonsData, { style: styleCount }).addTo(map);
+    var densityLayer = L.geoJson(polygonsData, { style: styleDensity });
+
+    // Layer control
+    L.control.layers(null, { 'Raw Count': countLayer, 'Density': densityLayer }).addTo(map);
+}).catch(error => console.error('Error loading data:', error));
