@@ -1,68 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choropleth Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@turf/turf"></script>
-    <style>
-        #map { height: 600px; }
-    </style>
+    <title>Choropleth Map: Point Counts & Normalized Rates</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+    <h2>Choropleth Map: Point Counts & Normalized Rates</h2>
     <div id="map"></div>
-    <script>
-        var map = L.map('map').setView([40, -95], 4);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+    <script src="INC.js"></script>
 
-        Promise.all([
-            fetch('megantew/Downloads/airportandcities/airports.geojson').then(res => res.json()),
-            fetch('megantew/usstatespolygons.geojson').then(res => res.json())
-        ]).then(([pointsData, polygonsData]) => {
-            polygonsData.features.forEach(polygon => {
-                let count = turf.pointsWithinPolygon(pointsData, polygon).features.length;
-                polygon.properties.count = count;
-                polygon.properties.density = count / turf.area(polygon);
-            });
-
-            function getColor(d) {
-                return d > 50 ? '#800026' :
-                       d > 20 ? '#BD0026' :
-                       d > 10 ? '#E31A1C' :
-                       d > 5  ? '#FC4E2A' :
-                       d > 0  ? '#FEB24C' : '#FFEDA0';
-            }
-
-            function styleCount(feature) {
-                return {
-                    fillColor: getColor(feature.properties.count),
-                    weight: 1,
-                    opacity: 1,
-                    color: 'black',
-                    fillOpacity: 0.7
-                };
-            }
-
-            function styleDensity(feature) {
-                return {
-                    fillColor: getColor(feature.properties.density),
-                    weight: 1,
-                    opacity: 1,
-                    color: 'black',
-                    fillOpacity: 0.7
-                };
-            }
-
-            var countLayer = L.geoJson(polygonsData, { style: styleCount }).addTo(map);
-            var densityLayer = L.geoJson(polygonsData, { style: styleDensity });
-
-            L.control.layers(null, { 'Raw Count': countLayer, 'Density': densityLayer }).addTo(map);
-        }).catch(error => console.error('Error loading data:', error));
-    </script>
 </body>
 </html>
